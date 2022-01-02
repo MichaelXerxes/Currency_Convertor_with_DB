@@ -21,6 +21,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Net.Http;
 using Newtonsoft.Json;
+using System.IO;
 
 namespace Currency_Convertor_Static
 {
@@ -32,10 +33,14 @@ namespace Currency_Convertor_Static
         Root values = new Root();
         public class Root
         {
-            public Rate rates { get; set; }
+            // string JSON = HttpResponseMessage.Content.ReadAsStringAsync().Result;
+            //  public Rate rates { get; set; }
+            public List<OneCurrency> ListCurrencys { get; set; }
             public long timestamp;
             public string license;
         }
+        APIDataClassDataContext dataConetct;
+        public static string ResponceStringforAPi { get; set; }
 
         SqlConnection sqlConnection = new SqlConnection();
         SqlCommand cmd = new SqlCommand();
@@ -57,7 +62,7 @@ namespace Currency_Convertor_Static
             String Connection = ConfigurationManager.ConnectionStrings["ConnectionString"].ConnectionString;
             sqlConnection = new SqlConnection(Connection);
             sqlConnection.Open();
-
+            dataConetct = new APIDataClassDataContext(Connection);
         }
         private void BindCurrency()
         {
@@ -119,7 +124,7 @@ namespace Currency_Convertor_Static
         }
         public void BindCurrencyAPI()
         {
-            DataTable dt = new DataTable();
+          /*  DataTable dt = new DataTable();
             dt.Columns.Add("Text");
             dt.Columns.Add("Value");
 
@@ -143,7 +148,7 @@ namespace Currency_Convertor_Static
             combToCurrency.ItemsSource = dt.DefaultView;
             combToCurrency.DisplayMemberPath = "Text";
             combToCurrency.SelectedValuePath = "Value";
-            combToCurrency.SelectedIndex = 0;
+            combToCurrency.SelectedIndex = 0;*/
         }
        
 
@@ -366,6 +371,7 @@ namespace Currency_Convertor_Static
                     HttpResponseMessage message = await client.GetAsync(uri);
                     if(message.StatusCode == System.Net.HttpStatusCode.OK){
                         var ResponceString = await message.Content.ReadAsStringAsync();
+                        ResponceStringforAPi = ResponceString;
                         var ResponceObject = JsonConvert.DeserializeObject<Root>(ResponceString);
                         MessageBox.Show("TimeStamp :"+ResponceString, "Information", MessageBoxButton.OK, MessageBoxImage.Information);
                         return ResponceObject;
@@ -382,8 +388,82 @@ namespace Currency_Convertor_Static
         private async void GetValue()
         {
             values = await GetData<Root>("https://openexchangerates.org/api/latest.json?app_id=9637b4764a0f4f2c978d2f3e6deac91a");
-            BindCurrencyAPI();
+           // BindCurrencyAPI();
+            BindDBAPI();
+            GetAPIDATAusinLinq();
+        }
+
+        private void tbName_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
+        }
+        public void GetAPIDATAusinLinq()
+        {
+            Currency_Manual cm = new Currency_Manual();
+            var currencys = from cr in dataConetct.Currency_Manuals select cr.Amount;
+            dgForApiLeft.ItemsSource = currencys;
+        }
+        public void BindApiLinq()
+        {
+            myConnection();
+            Currency_Manual cm = new Currency_Manual();
+            DataTable dt = (DataTable)JsonConvert.DeserializeObject(ResponceStringforAPi, (typeof(DataTable)));
+            //      string query = "insert into Currency_Manual values (@BankBranchId, @CashierId)";
+            //    SqlCommand sqlCommand = new SqlCommand(query, sqlConnection);
+            //     sqlConnection.Open();
+            ////    sqlCommand.Parameters.AddWithValue("@BankBranchId", BranchesList.SelectedValue);
+            //   sqlCommand.Parameters.AddWithValue("@CashierId", ListAllCashiers.SelectedValue);
+            //   sqlCommand.ExecuteScalar();
+            //  dataConetct.;
+            Console.WriteLine(File.ReadAllText(ResponceStringforAPi));
+
+            dataConetct.Currency_Manuals.InsertOnSubmit(cm);
+            dataConetct.SubmitChanges();
+            dgForApiLeft.ItemsSource = dataConetct.Currency_Manuals;
         }
         
+        public void BindDBAPI()
+        {
+
+             myConnection();
+            DataTable dt = new DataTable();
+          //  DataRow newRow = dt.NewRow();
+           // newRow["Id"] = 0;
+          //  newRow["CurrencyName"] = "--SELECT--";
+
+          //  dt.Rows.InsertAt(newRow, 0);
+
+            cmd = new SqlCommand("INSERT INTO Currency_Manual(CurrencyName, Amount) VALUES( @CurrencyName, @Amount)", sqlConnection);
+            cmd.CommandType = CommandType.Text;
+            cmd.Parameters.AddWithValue("@CurrencyName", txtCurrencyName.Text);
+            cmd.Parameters.AddWithValue("@Amount", txtAmount.Text);
+            
+           
+         
+            SqlDataAdapter = new SqlDataAdapter(cmd);
+            SqlDataAdapter.Fill(dt);         
+
+            if (dt != null && dt.Rows.Count > 0)
+            {
+                combFromCurrency.ItemsSource = dt.DefaultView;
+
+                combToCurrency.ItemsSource = dt.DefaultView;
+            }
+            cmd.ExecuteNonQuery();
+            sqlConnection.Close();
+
+            dgForApiLeft.ItemsSource = dt.DefaultView;
+            dgForApiLeft.DisplayMemberPath = "Text";
+            dgForApiLeft.SelectedValuePath = "Value";
+            dgForApiLeft.SelectedIndex = 0;
+            dgForApiRight.ItemsSource = dt.DefaultView;
+            dgForApiRight.DisplayMemberPath = "Text";
+            dgForApiRight.SelectedValuePath = "Value";
+            dgForApiRight.SelectedIndex = 0;
+
+           
+
+            MessageBox.Show("Data Saved", "Information", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
     }
 }

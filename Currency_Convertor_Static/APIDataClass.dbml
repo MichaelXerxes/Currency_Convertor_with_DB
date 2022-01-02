@@ -1,0 +1,10 @@
+﻿<?xml version="1.0" encoding="utf-8"?><Database Name="CurrencyDataBase" Class="APIDataClassDataContext" xmlns="http://schemas.microsoft.com/linqtosql/dbml/2007">
+  <Connection Mode="AppSettings" ConnectionString="Data Source=(LocalDB)\MSSQLLocalDB;AttachDbFilename=|DataDirectory|\DataBase\CurrencyDataBase.mdf;Integrated Security=True" SettingsObjectName="Currency_Convertor_Static.Properties.Settings" SettingsPropertyName="CurrencyDataBaseConnectionString" Provider="System.Data.SqlClient" />
+  <Table Name="dbo.Currency_Manual" Member="Currency_Manuals">
+    <Type Name="Currency_Manual">
+      <Column Name="Id" Type="System.Int32" DbType="Int NOT NULL IDENTITY" IsPrimaryKey="true" IsDbGenerated="true" CanBeNull="false" />
+      <Column Name="Amount" Type="System.Double" DbType="Float" CanBeNull="true" />
+      <Column Name="CurrencyName" Type="System.String" DbType="NVarChar(50)" CanBeNull="true" />
+    </Type>
+  </Table>
+</Database>
